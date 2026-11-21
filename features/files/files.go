@@ -3,6 +3,7 @@
 package files
 
 import (
+	"fmt"
 	"net/http"
 )
 
