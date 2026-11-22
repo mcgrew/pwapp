@@ -36,16 +36,22 @@ func Ternary[T any](cond bool, yes, no T) T {
 }
 
 func defaultHandler(w http.ResponseWriter, r *http.Request) {
+	// only allow GET
+	if r.Method != http.MethodGet {
+		w.Header().Set("Allow", "GET")
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
 	path := "html" + r.URL.Path
 	if strings.HasSuffix(path, "/") {
 		path += "index.html"
 	}
 
-	fmt.Printf("Fetching %s\n", path)
+	log.Printf("Fetching %s\n", path)
 	data, err := webContent.ReadFile(path)
 	if err != nil {
 		http.NotFound(w, r)
-		fmt.Printf("Not Found: %s\n", path)
+		log.Printf("Not Found: %s\n", path)
 	}
 	mimetype := mime.TypeByExtension(filepath.Ext(path))
 	w.Header().Set("Content-Type", mimetype)
@@ -104,7 +110,7 @@ func startUI(srv *http.Server, mux *http.ServeMux) {
 	killTimer := time.NewTimer(pingTimeout)
 	defer killTimer.Stop()
 	mux.HandleFunc("GET /_pw/ping", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("Ping!")
+		log.Println("Ping!")
 		killTimer.Reset(pingTimeout)
 	})
 	launchBrowser()
@@ -125,13 +131,12 @@ func main() {
 	parseFlags()
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /", defaultHandler)
-	mux.HandleFunc("GET /_pw/fetch/", fetch.Get)
-	mux.HandleFunc("POST /_pw/fetch/", fetch.Post)
-	mux.HandleFunc("GET /_pw/file/", files.Read)
-	mux.HandleFunc("POST /_pw/file/", files.Write)
-	mux.HandleFunc("DELETE /_pw/file/", files.Delete)
-	mux.HandleFunc("GET /_pw/app.js", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/", defaultHandler)
+	mux.HandleFunc("/_pwfetch/", fetch.Request)
+	mux.HandleFunc("GET /_pwfile/", files.Read)
+	mux.HandleFunc("POST /_pwfile/", files.Write)
+	mux.HandleFunc("DELETE /_pwfile/", files.Delete)
+	mux.HandleFunc("GET /_pwapp.js", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
 		w.Write(pwapplib)
 	})

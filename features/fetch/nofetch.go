@@ -6,10 +6,8 @@ import (
 	"net/http"
 )
 
-func Get(w http.ResponseWriter, r *http.Request) {
-	http.NotFound(w, r)
-}
+const Enabled = false
 
-func Post(w http.ResponseWriter, r *http.Request) {
+func Request(w http.ResponseWriter, r *http.Request) {
 	http.NotFound(w, r)
 }
