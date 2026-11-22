@@ -14,8 +14,10 @@ import (
 
 const Enabled = true
 
+const FetchScript = `if (!window._fetch){_fetch = fetch;fetch=(url, args)=>_fetch(/^https?:\/\//i.test(url)?'/_pwfetch/'+encodeURIComponent(url):url,args)}`
+
 func Request(w http.ResponseWriter, r *http.Request) {
-	reqUrl := r.URL.Path[11:]
+	reqUrl := r.URL.Path[10:]
 	if !strings.HasPrefix(reqUrl, "http") {
 		http.NotFound(w, r)
 		return

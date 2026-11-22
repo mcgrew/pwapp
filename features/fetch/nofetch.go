@@ -8,6 +8,8 @@ import (
 
 const Enabled = false
 
+const FetchScript = ""
+
 func Request(w http.ResponseWriter, r *http.Request) {
 	http.NotFound(w, r)
 }

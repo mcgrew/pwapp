@@ -31,6 +31,8 @@ var headless bool
 var hostPort int
 var hostIp = "[::1]"
 
+const pingScript = "setInterval(function() {fetch('_pwping').then()}, 7000);"
+
 func Ternary[T any](cond bool, yes, no T) T {
 	if cond { return yes }; return no
 }
@@ -55,17 +57,14 @@ func defaultHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	mimetype := mime.TypeByExtension(filepath.Ext(path))
 	w.Header().Set("Content-Type", mimetype)
-	w.Write(injectTimer(path, data))
+	w.Write(injectJS(path, data))
 }
 
-func injectTimer(path string, html []byte) []byte {
+func injectJS(path string, html []byte) []byte {
 	if headless || !strings.HasSuffix(path, "html"){ return html }
-	pingTag := []byte(
-		`</body>
-		<script type="text/javascript">
-			setInterval(function() {fetch('_pw/ping').then()}, 7000);
-		</script>`)
-	return bytes.Replace(html, []byte("</body>"), pingTag, 1)
+	injection := []byte( `</body><script type="text/javascript">` +
+		pingScript + fetch.FetchScript + "</script>")
+	return bytes.Replace(html, []byte("</body>"), injection, 1)
 }
 
 func launchBrowser() error {
@@ -109,7 +108,7 @@ func startUI(srv *http.Server, mux *http.ServeMux) {
 	pingTimeout := 10 * time.Second
 	killTimer := time.NewTimer(pingTimeout)
 	defer killTimer.Stop()
-	mux.HandleFunc("GET /_pw/ping", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /_pwping", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("Ping!")
 		killTimer.Reset(pingTimeout)
 	})
