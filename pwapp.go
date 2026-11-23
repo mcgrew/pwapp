@@ -9,6 +9,7 @@ import (
 	"log"
 	"mime"
 	"net/http"
+	"os"
 	"os/exec"
 	"os/signal"
 	"path/filepath"
@@ -30,6 +31,7 @@ var pwapplib []byte
 var headless bool
 var hostPort int
 var hostIp = "[::1]"
+var workDir string
 
 const pingScript = "setInterval(function() {fetch('_pwping').then()}, 7000);"
 
@@ -91,6 +93,7 @@ func parseFlags() {
 	flag.IntVar(&hostPort, "port", 37777, "The port number to run on")
 	flag.BoolVar(&headless, "headless", false, "Do not launch the web browser")
 	flag.BoolVar(&ipv4, "ipv4", false, "Use ipv4 instead of ipv6")
+	flag.StringVar(&workDir, "workdir", "", "The working directory for the server")
 	flag.Parse()
 	if ipv4 { hostIp = "127.0.0.1" }
 }
@@ -109,7 +112,6 @@ func startUI(srv *http.Server, mux *http.ServeMux) {
 	killTimer := time.NewTimer(pingTimeout)
 	defer killTimer.Stop()
 	mux.HandleFunc("GET /_pwping", func(w http.ResponseWriter, r *http.Request) {
-		log.Println("Ping!")
 		killTimer.Reset(pingTimeout)
 	})
 	launchBrowser()
@@ -128,13 +130,26 @@ func startUI(srv *http.Server, mux *http.ServeMux) {
 
 func main() {
 	parseFlags()
+	if workDir != "" {
+		err := os.Chdir(workDir)
+		if err != nil {
+			log.Fatalf("Unable to open directory %s", workDir)
+			log.Fatal(err)
+			os.Exit(-1)
+		}
+	}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", defaultHandler)
-	mux.HandleFunc("/_pwfetch/", fetch.Request)
-	mux.HandleFunc("GET /_pwfile/", files.Read)
-	mux.HandleFunc("POST /_pwfile/", files.Write)
-	mux.HandleFunc("DELETE /_pwfile/", files.Delete)
+	if fetch.Enabled {
+		mux.HandleFunc("/_pwfetch/", fetch.Request)
+	}
+	if files.Enabled {
+		mux.HandleFunc("GET /_pwfile/", files.Get) // read file/dir
+		mux.HandleFunc("PUT /_pwfile/", files.Put) // write file/dir
+		mux.HandleFunc("POST /_pwfile/", files.Post) // move file
+		mux.HandleFunc("DELETE /_pwfile/", files.Delete) // delete file
+	}
 	mux.HandleFunc("GET /_pwapp.js", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
 		w.Write(pwapplib)

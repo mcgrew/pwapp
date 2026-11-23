@@ -6,22 +6,9 @@ import (
 	"net/http"
 )
 
-func Read(w http.ResponseWriter, r *http.Request) {
-	http.NotFound(w, r)
-}
+const Enabled = false
 
-func Write(w http.ResponseWriter, r *http.Request) {
-	http.NotFound(w, r)
-}
-
-func Delete(w http.ResponseWriter, r *http.Request) {
-	http.NotFound(w, r)
-}
-
-func Move(w http.ResponseWriter, r *http.Request) {
-	http.NotFound(w, r)
-}
-
-func MkDir(w http.ResponseWriter, r *http.Request) {
-	http.NotFound(w, r)
-}
+func Get(w http.ResponseWriter, r *http.Request) { http.NotFound(w, r) }
+func Put(w http.ResponseWriter, r *http.Request) { http.NotFound(w, r) }
+func Post(w http.ResponseWriter, r *http.Request) { http.NotFound(w, r) }
+func Delete(w http.ResponseWriter, r *http.Request) { http.NotFound(w, r) }
